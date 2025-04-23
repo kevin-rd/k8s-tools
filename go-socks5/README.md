@@ -11,8 +11,8 @@
 ### 方法一：build
 
 ```bash
-go build -ldflags="-s -w" -o socks5 main.go
+go build -ldflags="-s -w" -o socks5 cmd/main.go
 
 # go build linux
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o socks5 main.go
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o socks5 cmd/main.go
 ````
