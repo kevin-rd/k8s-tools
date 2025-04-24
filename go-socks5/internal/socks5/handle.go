@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.io/kevin-rd/k8s-tools/go-socks5/internal/utils"
 	"io"
 	"net"
 )
@@ -19,10 +18,10 @@ func handle(ctx context.Context, conn net.Conn) {
 
 	err := handshake(proxy)
 	if err != nil {
-		log.Warn("fail in handshake", err)
+		log.Warn("fail in handshake: ", err)
 		return
 	}
-	transport(proxy)
+	transport(ctx, proxy)
 }
 
 func handshake(proxy *Proxy) error {
@@ -49,21 +48,21 @@ func handshake(proxy *Proxy) error {
 func auth(proxy *Proxy) error {
 	/*
 		Read
-		   +----+----------+----------+
-		   |VER | NMETHODS | METHODS  |
-		   +----+----------+----------+
-		   | 1  |    1     | 1 to 255 |
-		   +----+----------+----------+
+		   +-----+----------+-----------+
+		   | VER | NMETHODS |  METHODS  |
+		   +-----+----------+-----------+
+		   |  1  |    1     |  1 to 255 |
+		   +-----+----------+-----------+
 	*/
-	buf := utils.SPool.Get().([]byte)
-	defer utils.SPool.Put(buf)
+	buf := bufPool512.Get().([]byte)
+	defer bufPool512.Put(buf)
 
 	n, err := io.ReadFull(proxy.Inbound.reader, buf[:2])
-	if n != 2 {
-		return errors.New("fail to read socks5 request:" + err.Error())
+	if err != nil || n != 2 {
+		return fmt.Errorf("failed to read 2 bytes from client: read %d bytes, err: %v", n, err)
 	}
 
-	ver, nmethods := uint8(buf[0]), int(buf[1])
+	ver, nmethods := buf[0], int(buf[1])
 	if ver != SOCKS5VERSION {
 		return errors.New("only support socks5 version")
 	}
@@ -71,11 +70,13 @@ func auth(proxy *Proxy) error {
 	if err != nil {
 		return errors.New("fail to read methods" + err.Error())
 	}
-	supportNoAuth := false
+	var supportNoAuth bool
 	for _, m := range buf[:nmethods] {
 		switch m {
 		case MethodNoAuth:
 			supportNoAuth = true
+		default:
+			supportNoAuth = false
 		}
 	}
 	if !supportNoAuth {
@@ -84,15 +85,16 @@ func auth(proxy *Proxy) error {
 
 	/*
 		replay
-			+----+--------+
-			|VER | METHOD |
-			+----+--------+
-			| 1  |   1    |
-			+----+--------+
+		+-----+--------+
+		| VER | METHOD |
+		+-----+--------+
+		|  1  |   1    |
+		+-----+--------+
 	*/
-	n, err = proxy.Inbound.writer.Write([]byte{0x05, 0x00}) // 无需认证
+	// 无需认证
+	n, err = proxy.Inbound.writer.Write([]byte{0x05, 0x00})
 	if n != 2 {
-		return errors.New("fail to wirte socks method " + err.Error())
+		return fmt.Errorf("fail to write socks method: %v", err)
 	}
 
 	return nil
@@ -107,8 +109,9 @@ func readRequest(proxy *Proxy) error {
 		   | 1  |  1  | X'00' |  1   | Variable |    2     |
 		   +----+-----+-------+------+----------+----------+
 	*/
-	buf := utils.SPool.Get().([]byte)
-	defer utils.SPool.Put(buf)
+	buf := bufPool512.Get().([]byte)
+	defer bufPool512.Put(buf)
+
 	n, err := io.ReadFull(proxy.Inbound.reader, buf[:4])
 	if n != 4 {
 		return errors.New("fail to read request " + err.Error())
@@ -184,10 +187,39 @@ func replay(proxy *Proxy) error {
 	return nil
 }
 
-func transport(proxy *Proxy) {
-	// 语义上是注释的动作;但是iobuf.reader中无法获取rd值
-	// io.Copy(proxy.OutBound.writer, proxy.Inbound.reader)
-	go io.Copy(proxy.OutBound.writer, proxy.Inbound.writer) // outbound <- inbound
-	// io.Copy(proxy.Inbound.writer, proxy.OutBound.reader)
-	go io.Copy(proxy.Inbound.writer, proxy.OutBound.writer) // inbound <- outbound
+func transport(ctx context.Context, proxy *Proxy) {
+	done := make(chan struct{}, 2)
+
+	go func() {
+		defer func() { done <- struct{}{} }()
+		_, err := copyWithCtx(ctx, proxy.OutBound.writer, proxy.Inbound.reader)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				log.Debugf("copy inbound -> outbound failed: %v", err)
+			} else {
+				log.Warnf("copy inbound -> outbound failed: %v", err)
+			}
+		}
+	}()
+
+	go func() {
+		defer func() { done <- struct{}{} }()
+		_, err := copyWithCtx(ctx, proxy.Inbound.writer, proxy.OutBound.reader)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				log.Debugf("copy outbound -> inbound failed: %v", err)
+			} else {
+				log.Warnf("copy outbound -> inbound failed: %v", err)
+			}
+		}
+	}()
+
+	<-ctx.Done()
+	_ = proxy.Inbound.writer.Close()
+	_ = proxy.OutBound.writer.Close()
+
+	// finally wait for both copy routines to complete
+	<-done
+	<-done
+	log.Debug("transport has completed: ", proxy.Inbound.writer.RemoteAddr().String())
 }

@@ -32,7 +32,7 @@ func main() {
 		count := 0
 		for sig := range stopCh {
 			count++
-			log.Infof("Receive signal: %s, count: %d", sig, count)
+			log.Debug("Receive signal: %v, count: %d", sig, count)
 
 			if count == 1 {
 				log.Info("First signal received, initiating graceful shutdown...")
