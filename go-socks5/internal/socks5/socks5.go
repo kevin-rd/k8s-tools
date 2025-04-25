@@ -63,8 +63,8 @@ func MustStart(ctx context.Context, port int) {
 			go func(conn net.Conn) {
 				defer func() {
 					_ = conn.Close()
-					<-sem
 					wg.Done()
+					<-sem
 					log.Infof("Connection closed: %v", conn.RemoteAddr())
 				}()
 

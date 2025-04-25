@@ -6,12 +6,19 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"github.io/kevin-rd/k8s-tools/go-socks5/internal/metrics"
 	"io"
 	"net"
 )
 
 func handle(ctx context.Context, conn net.Conn) {
+	labels := prometheus.Labels{"host": conn.RemoteAddr().(*net.TCPAddr).IP.String()}
+	metrics.ConnectGauge.With(labels).Inc()
+	metrics.ConnectCounter.With(labels).Inc()
+	defer metrics.ConnectGauge.With(labels).Dec()
+
 	proxy := &Proxy{}
 	proxy.Inbound.reader = bufio.NewReader(conn)
 	proxy.Inbound.writer = conn

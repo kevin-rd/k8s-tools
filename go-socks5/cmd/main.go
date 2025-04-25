@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"github.io/kevin-rd/k8s-tools/go-socks5/internal/metrics"
 	"github.io/kevin-rd/k8s-tools/go-socks5/internal/socks5"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,6 +46,19 @@ func main() {
 		}
 	}()
 
+	// metrics server
+	go func() {
+		log.Info("Starting metrics server...")
+		if err := metrics.StartServer(ctx, ":10081"); err != nil {
+			if err == http.ErrServerClosed {
+				log.Info("Metrics server has gracefully shutdown.")
+			} else {
+				log.Fatalf("metrics server error: %v", err)
+			}
+		}
+	}()
+
+	// socks5 server
 	socks5.MustStart(ctx, 10080)
-	log.Info("Graceful shutdown done.")
+	log.Info("Shutdown done.")
 }
