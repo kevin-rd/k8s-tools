@@ -214,12 +214,17 @@ func transport(ctx context.Context, proxy *Proxy) {
 		}
 	}()
 
-	<-ctx.Done()
+	go func() {
+		<-ctx.Done()
+		_ = proxy.Inbound.writer.Close()
+		_ = proxy.OutBound.writer.Close()
+	}()
+
+	<-done
 	_ = proxy.Inbound.writer.Close()
 	_ = proxy.OutBound.writer.Close()
 
 	// finally wait for both copy routines to complete
-	<-done
 	<-done
 	log.Debug("transport has completed: ", proxy.Inbound.writer.RemoteAddr().String())
 }
