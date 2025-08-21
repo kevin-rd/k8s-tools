@@ -1,0 +1,72 @@
+kind: pipeline
+name: build
+type: docker
+steps:
+# golang
+- name: docker build
+  image: plugins/docker
+  pull: if-not-exists
+  settings:
+    registry: hub.bitkinetic.com
+    repo: hub.bitkinetic.com/public/golang-cicd
+    tags: 1.23-bullseye
+    purge: true
+    build_args: []
+    username:
+      from_secret: docker-hub-username
+    password:
+      from_secret: docker-hub-password
+    context: ./
+    dockerfile: dockerfile.golang
+  when:
+    ref:
+    - refs/heads/main
+# nodejs
+- name: docker build
+  image: plugins/docker
+  pull: if-not-exists
+  settings:
+    registry: hub.bitkinetic.com
+    repo: hub.bitkinetic.com/public/node-cicd
+    tags: 20
+    purge: true
+    build_args: []
+    username:
+      from_secret: docker-hub-username
+    password:
+      from_secret: docker-hub-password
+    context: ./
+    dockerfile: dockerfile.node
+  when:
+    ref:
+    - refs/heads/main
+trigger:
+  ref:
+    include:
+    - refs/heads/main
+  event:
+  - push
+---
+kind: secret
+name: docker-hub-username
+get:
+  path: docker-secret-hub.bitkinetic.com
+  name: username
+---
+kind: secret
+name: docker-hub-password
+get:
+  path: docker-secret-hub.bitkinetic.com
+  name: password
+---
+kind: secret
+name: drone-devops-token
+get:
+  path: drone-server-devops-token
+  name: token
+---
+kind: secret
+name: drone-server-address
+get:
+  path: drone-server-devops-token
+  name: url
