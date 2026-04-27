@@ -3,7 +3,7 @@ name: Publish biz charts
 on:
   push:
     tags:
-      - "*"
+      - "v*"
   workflow_dispatch:
     inputs:
       publish_all:
