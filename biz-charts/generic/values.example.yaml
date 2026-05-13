@@ -1,0 +1,103 @@
+# Common example values for a generic application.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/example/app
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+ports:
+  - name: http
+    port: 80
+    containerPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    protocol: TCP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: app-example-tls
+      hosts:
+        - app.example.com
+
+env:
+  - name: APP_NAME
+    value: example-app
+
+envConfig:
+  enabled: true
+  data:
+    APP_ENV: production
+    LOG_LEVEL: info
+
+envSecret:
+  enabled: true
+  stringData:
+    DB_HOST: postgres.example.internal
+    DB_PASSWORD: change-me
+
+fileConfig:
+  enabled: true
+  mountPath: /app/config
+  data:
+    config.yaml: |
+      server:
+        port: 8080
+      logging:
+        level: info
+
+fileSecret:
+  enabled: true
+  mountPath: /app/secret
+  stringData:
+    token: change-me
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  failureThreshold: 30
+  periodSeconds: 10
+
+# Enable only when this Deployment really needs local persistent storage.
+persistence:
+  enabled: false
+  claims:
+    - name: data
+      mountPath: /data
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce

@@ -29,7 +29,7 @@ fullnameOverride: ""
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Automatically mount a ServiceAccount's API credentials?
   automount: true
   # Annotations to add to the service account
@@ -69,11 +69,45 @@ env: []
 #       fieldPath: status.podIP
 
 envFrom: []
-# Reference existing ConfigMaps or Secrets only; this chart does not create them in this phase.
 # - configMapRef:
 #     name: app-config
 # - secretRef:
 #     name: app-secret
+
+envConfig:
+  enabled: false
+  # existingName takes precedence. When empty, the chart creates <fullname>-env-config.
+  existingName: ""
+  data: {}
+  # APP_ENV: production
+  # LOG_LEVEL: info
+
+envSecret:
+  enabled: false
+  # existingName takes precedence. When empty, the chart creates <fullname>-env-secret.
+  existingName: ""
+  stringData: {}
+  # DB_PASSWORD: change-me
+
+fileConfig:
+  enabled: false
+  # existingName takes precedence. When empty, the chart creates <fullname>-file-config.
+  existingName: ""
+  mountPath: /app/config
+  readOnly: true
+  data: {}
+  # config.yaml: |
+  #   server:
+  #     port: 8080
+
+fileSecret:
+  enabled: false
+  # existingName takes precedence. When empty, the chart creates <fullname>-file-secret.
+  existingName: ""
+  mountPath: /app/secret
+  readOnly: true
+  stringData: {}
+  # token: change-me
 
 # Application ports exposed by the main container and Service.
 # The first port is used by Ingress, NOTES, and helm test as the default backend port.

@@ -19,9 +19,12 @@ spec:
       {{- include "generic.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.podAnnotations (and .Values.envConfig.enabled (not .Values.envConfig.existingName)) (and .Values.fileConfig.enabled (not .Values.fileConfig.existingName)) (and .Values.envSecret.enabled (not .Values.envSecret.existingName)) (and .Values.fileSecret.enabled (not .Values.fileSecret.existingName)) }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        checksum/config: {{ include "generic.configChecksum" . }}
       {{- end }}
       labels:
         {{- include "generic.labels" . | nindent 8 }}
@@ -58,9 +61,19 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.envFrom }}
+          {{- if or .Values.envFrom .Values.envConfig.enabled .Values.envSecret.enabled }}
           envFrom:
+            {{- with .Values.envFrom }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.envConfig.enabled }}
+            - configMapRef:
+                name: {{ include "generic.envConfigName" . }}
+            {{- end }}
+            {{- if .Values.envSecret.enabled }}
+            - secretRef:
+                name: {{ include "generic.envSecretName" . }}
+            {{- end }}
           {{- end }}
           {{- with .Values.ports }}
           ports:
@@ -88,10 +101,20 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or .Values.volumeMounts .Values.persistence.enabled }}
+          {{- if or .Values.volumeMounts .Values.persistence.enabled .Values.fileConfig.enabled .Values.fileSecret.enabled }}
           volumeMounts:
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.fileConfig.enabled }}
+            - name: file-config
+              mountPath: {{ required "fileConfig.mountPath is required when fileConfig.enabled=true" .Values.fileConfig.mountPath }}
+              readOnly: {{ .Values.fileConfig.readOnly }}
+            {{- end }}
+            {{- if .Values.fileSecret.enabled }}
+            - name: file-secret
+              mountPath: {{ required "fileSecret.mountPath is required when fileSecret.enabled=true" .Values.fileSecret.mountPath }}
+              readOnly: {{ .Values.fileSecret.readOnly }}
             {{- end }}
             {{- if .Values.persistence.enabled }}
             {{- range .Values.persistence.claims }}
@@ -106,10 +129,20 @@ spec:
             {{- end }}
             {{- end }}
           {{- end }}
-      {{- if or .Values.volumes .Values.persistence.enabled }}
+      {{- if or .Values.volumes .Values.persistence.enabled .Values.fileConfig.enabled .Values.fileSecret.enabled }}
       volumes:
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.fileConfig.enabled }}
+        - name: file-config
+          configMap:
+            name: {{ include "generic.fileConfigName" . }}
+        {{- end }}
+        {{- if .Values.fileSecret.enabled }}
+        - name: file-secret
+          secret:
+            secretName: {{ include "generic.fileSecretName" . }}
         {{- end }}
         {{- if .Values.persistence.enabled }}
         {{- range .Values.persistence.claims }}

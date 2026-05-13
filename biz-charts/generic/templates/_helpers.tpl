@@ -25,12 +25,7 @@ Create chart name and version as used by the chart label.
 Common labels.
 */}}
 {{- define "generic.labels" -}}
-helm.sh/chart: {{ include "generic.chart" . }}
 {{ include "generic.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
@@ -67,4 +62,81 @@ Return the claim name for a persistence item.
 {{- $root := index . 0 -}}
 {{- $claim := index . 1 -}}
 {{- default (printf "%s-%s" (include "generic.fullname" $root) ($claim.name | default "data" | lower)) $claim.existingClaim | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Return the ConfigMap name used for envFrom.
+*/}}
+{{- define "generic.envConfigName" -}}
+{{- if .Values.envConfig.existingName -}}
+{{- .Values.envConfig.existingName -}}
+{{- else -}}
+{{- if empty .Values.envConfig.data -}}
+{{- fail "envConfig.data is required when envConfig.enabled=true and envConfig.existingName is empty" -}}
+{{- end -}}
+{{- printf "%s-env-config" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the Secret name used for envFrom.
+*/}}
+{{- define "generic.envSecretName" -}}
+{{- if .Values.envSecret.existingName -}}
+{{- .Values.envSecret.existingName -}}
+{{- else -}}
+{{- if empty .Values.envSecret.stringData -}}
+{{- fail "envSecret.stringData is required when envSecret.enabled=true and envSecret.existingName is empty" -}}
+{{- end -}}
+{{- printf "%s-env-secret" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the ConfigMap name used for file mounts.
+*/}}
+{{- define "generic.fileConfigName" -}}
+{{- if .Values.fileConfig.existingName -}}
+{{- .Values.fileConfig.existingName -}}
+{{- else -}}
+{{- if empty .Values.fileConfig.data -}}
+{{- fail "fileConfig.data is required when fileConfig.enabled=true and fileConfig.existingName is empty" -}}
+{{- end -}}
+{{- printf "%s-file-config" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the Secret name used for file mounts.
+*/}}
+{{- define "generic.fileSecretName" -}}
+{{- if .Values.fileSecret.existingName -}}
+{{- .Values.fileSecret.existingName -}}
+{{- else -}}
+{{- if empty .Values.fileSecret.stringData -}}
+{{- fail "fileSecret.stringData is required when fileSecret.enabled=true and fileSecret.existingName is empty" -}}
+{{- end -}}
+{{- printf "%s-file-secret" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Return a checksum for chart-managed ConfigMaps and Secrets.
+Existing external objects are intentionally excluded because Helm cannot see their contents.
+*/}}
+{{- define "generic.configChecksum" -}}
+{{- $payload := dict -}}
+{{- if and .Values.envConfig.enabled (not .Values.envConfig.existingName) -}}
+{{- $_ := set $payload "envConfig" .Values.envConfig.data -}}
+{{- end -}}
+{{- if and .Values.fileConfig.enabled (not .Values.fileConfig.existingName) -}}
+{{- $_ := set $payload "fileConfig" .Values.fileConfig.data -}}
+{{- end -}}
+{{- if and .Values.envSecret.enabled (not .Values.envSecret.existingName) -}}
+{{- $_ := set $payload "envSecret" .Values.envSecret.stringData -}}
+{{- end -}}
+{{- if and .Values.fileSecret.enabled (not .Values.fileSecret.existingName) -}}
+{{- $_ := set $payload "fileSecret" .Values.fileSecret.stringData -}}
+{{- end -}}
+{{- toYaml $payload | sha256sum -}}
 {{- end }}
