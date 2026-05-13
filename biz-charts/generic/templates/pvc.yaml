@@ -1,0 +1,26 @@
+{{- if .Values.persistence.enabled }}
+{{- range .Values.persistence.claims }}
+{{- if not .existingClaim }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "generic.persistenceClaimName" (list $ .) }}
+  labels:
+    {{- include "generic.labels" $ | nindent 4 }}
+  {{- with .annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  accessModes:
+    {{- toYaml (.accessModes | default (list "ReadWriteOnce")) | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .size | default "10Gi" }}
+{{- end }}
+{{- end }}
+{{- end }}

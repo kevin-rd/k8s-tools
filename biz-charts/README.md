@@ -4,7 +4,7 @@
 
 当前包含：
 
-- `go`: Go 服务模板
+- `generic`: 通用服务模板
 - `static`: 静态站点模板
 
 ## 使用方式
@@ -13,7 +13,7 @@
 
 ```bash
 helm template demo ./biz-charts/static
-helm template demo ./biz-charts/go
+helm template demo ./biz-charts/generic
 ```
 
 带自定义 values：
@@ -37,7 +37,7 @@ helm install demo oci://ghcr.io/<owner>/biz-charts/static --version <chart-versi
 例如：
 
 ```bash
-helm install demo oci://ghcr.io/<owner>/biz-charts/go --version 0.1.0 -n demo --create-namespace
+helm install demo oci://ghcr.io/<owner>/biz-charts/generic --version 0.1.0 -n demo --create-namespace
 ```
 
 ### 4. 拉取并查看

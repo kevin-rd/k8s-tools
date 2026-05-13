@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "generic.fullname" . }}
+  labels:
+    {{- include "generic.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{- range .Values.ports }}
+    {{- $name := required "ports[].name is required" .name }}
+    {{- $servicePort := required "ports[].port is required" .port }}
+    - name: {{ $name }}
+      port: {{ $servicePort }}
+      targetPort: {{ .targetPort | default $name }}
+      protocol: {{ .protocol | default "TCP" }}
+      {{- with .nodePort }}
+      nodePort: {{ . }}
+      {{- end }}
+      {{- with .appProtocol }}
+      appProtocol: {{ . }}
+      {{- end }}
+    {{- end }}
+  selector:
+    {{- include "generic.selectorLabels" . | nindent 4 }}
