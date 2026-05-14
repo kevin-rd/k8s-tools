@@ -18,10 +18,11 @@ fileConfig:
       database:
         host: postgres.example.internal
         user: app
-        password: '[[ file.Read "/secrets/db-password" ]]'
+        password: '[[ getenv "DB_PASSWORD" ]]'
       server:
         port: 8080
   render:
     enabled: true
     secret:
+      # The Secret should contain DB_PASSWORD; it is injected into the renderer env by default.
       existingName: app-config-secret

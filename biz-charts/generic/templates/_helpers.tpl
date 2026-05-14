@@ -71,9 +71,6 @@ Return the ConfigMap name used for envFrom.
 {{- if .Values.envConfig.existingName -}}
 {{- .Values.envConfig.existingName -}}
 {{- else -}}
-{{- if empty .Values.envConfig.data -}}
-{{- fail "envConfig.data is required when envConfig.enabled=true and envConfig.existingName is empty" -}}
-{{- end -}}
 {{- printf "%s-env-config" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end }}
@@ -85,9 +82,6 @@ Return the Secret name used for envFrom.
 {{- if .Values.envSecret.existingName -}}
 {{- .Values.envSecret.existingName -}}
 {{- else -}}
-{{- if empty .Values.envSecret.stringData -}}
-{{- fail "envSecret.stringData is required when envSecret.enabled=true and envSecret.existingName is empty" -}}
-{{- end -}}
 {{- printf "%s-env-secret" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end }}
@@ -99,9 +93,6 @@ Return the ConfigMap name used for file mounts.
 {{- if .Values.fileConfig.existingName -}}
 {{- .Values.fileConfig.existingName -}}
 {{- else -}}
-{{- if empty .Values.fileConfig.data -}}
-{{- fail "fileConfig.data is required when fileConfig.enabled=true and fileConfig.existingName is empty" -}}
-{{- end -}}
 {{- printf "%s-file-config" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end }}
@@ -113,9 +104,6 @@ Return the Secret name used for file mounts.
 {{- if .Values.fileSecret.existingName -}}
 {{- .Values.fileSecret.existingName -}}
 {{- else -}}
-{{- if empty .Values.fileSecret.stringData -}}
-{{- fail "fileSecret.stringData is required when fileSecret.enabled=true and fileSecret.existingName is empty" -}}
-{{- end -}}
 {{- printf "%s-file-secret" (include "generic.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 {{- end }}
@@ -124,10 +112,37 @@ Return the Secret name used for file mounts.
 Return the Secret name used as fileConfig render input.
 */}}
 {{- define "generic.fileConfigRenderSecretName" -}}
-{{- if .Values.fileConfig.render.secret.existingName -}}
 {{- .Values.fileConfig.render.secret.existingName -}}
+{{- end }}
+
+{{/*
+Validate config and secret values before rendering resources.
+*/}}
+{{- define "generic.validateConfig" -}}
+{{- if and .Values.envConfig.enabled (not .Values.envConfig.existingName) (empty .Values.envConfig.data) -}}
+{{- fail "envConfig requires either data or existingName when envConfig.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.envSecret.enabled (not .Values.envSecret.existingName) (empty .Values.envSecret.stringData) -}}
+{{- fail "envSecret requires either stringData or existingName when envSecret.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.fileConfig.render.enabled (not .Values.fileConfig.enabled) -}}
+{{- fail "fileConfig.enabled must be true when fileConfig.render.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.fileConfig.enabled (not .Values.fileConfig.existingName) (empty .Values.fileConfig.data) -}}
+{{- if .Values.fileConfig.render.enabled -}}
+{{- fail "fileConfig requires either data or existingName when fileConfig.enabled=true; when fileConfig.render.enabled=true, data/existingName is used as the template source" -}}
 {{- else -}}
+{{- fail "fileConfig requires either data or existingName when fileConfig.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+{{- if and .Values.fileConfig.render.enabled (not .Values.fileConfig.render.secret.existingName) -}}
 {{- fail "fileConfig.render.secret.existingName is required when fileConfig.render.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.fileConfig.render.enabled (not .Values.fileConfig.render.secret.envFrom) (not .Values.fileConfig.render.secret.mountPath) -}}
+{{- fail "fileConfig.render.secret requires envFrom=true or mountPath when fileConfig.render.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.fileSecret.enabled (not .Values.fileSecret.existingName) (empty .Values.fileSecret.stringData) -}}
+{{- fail "fileSecret requires either stringData or existingName when fileSecret.enabled=true" -}}
 {{- end -}}
 {{- end }}
 

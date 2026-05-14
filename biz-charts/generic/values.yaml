@@ -101,13 +101,17 @@ fileConfig:
   #     port: 8080
   render:
     enabled: false
-    # Renders fileConfig templates before the application starts.
-    # The template ConfigMap is mounted at /templates, the input Secret at /secrets,
-    # and the rendered output is written to a memory-backed emptyDir at /rendered.
+    # Renders fileConfig templates before the application starts. In render mode,
+    # fileConfig.data/existingName is the template source, and the rendered output
+    # is mounted at fileConfig.mountPath.
     secret:
-      # Required when render.enabled=true. The Secret can be created manually,
-      # by SOPS/SealedSecret, or by External Secrets Operator.
+      # Required when render.enabled=true. By default it is exposed to the
+      # renderer as environment variables for templates like [[ getenv "DB_PASSWORD" ]].
       existingName: ""
+      envFrom: true
+      # Optionally also mount the Secret as files, e.g. /secrets for certificates
+      # or multi-line values. Set envFrom=false when keys are not valid env names.
+      mountPath: ""
     renderer:
       image:
         repository: gomplate/gomplate
@@ -116,7 +120,8 @@ fileConfig:
       command: []
       # Use non-Helm delimiters so config files can be managed by Helm charts
       # without Helm consuming gomplate placeholders first.
-      # Exclude Kubernetes ConfigMap volume metadata entries such as ..data.
+      # Exclude Kubernetes ConfigMap volume metadata entries such as ..data
+      # without excluding valid dotfiles like .env or .npmrc.
       args:
         - --left-delim
         - "[["
@@ -127,7 +132,7 @@ fileConfig:
         - --output-dir
         - /rendered
         - --exclude
-        - ".*"
+        - "..*"
 
 fileSecret:
   enabled: false

@@ -1,6 +1,3 @@
-{{- if and .Values.fileConfig.render.enabled (not .Values.fileConfig.enabled) }}
-{{- fail "fileConfig.enabled must be true when fileConfig.render.enabled=true" }}
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -57,13 +54,20 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if .Values.fileConfig.render.secret.envFrom }}
+          envFrom:
+            - secretRef:
+                name: {{ include "generic.fileConfigRenderSecretName" . }}
+          {{- end }}
           volumeMounts:
             - name: file-config
               mountPath: /templates
               readOnly: true
+            {{- with .Values.fileConfig.render.secret.mountPath }}
             - name: file-config-render-secret
-              mountPath: /secrets
+              mountPath: {{ . }}
               readOnly: true
+            {{- end }}
             - name: file-config-rendered
               mountPath: /rendered
       {{- end }}
@@ -165,9 +169,11 @@ spec:
           configMap:
             name: {{ include "generic.fileConfigName" . }}
         {{- if .Values.fileConfig.render.enabled }}
+        {{- if .Values.fileConfig.render.secret.mountPath }}
         - name: file-config-render-secret
           secret:
             secretName: {{ include "generic.fileConfigRenderSecretName" . }}
+        {{- end }}
         - name: file-config-rendered
           emptyDir:
             medium: Memory

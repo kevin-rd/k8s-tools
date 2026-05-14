@@ -1,7 +1,4 @@
 {{- if and .Values.envConfig.enabled (not .Values.envConfig.existingName) }}
-{{- if empty .Values.envConfig.data }}
-{{- fail "envConfig.data is required when envConfig.enabled=true and envConfig.existingName is empty" }}
-{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -15,9 +12,6 @@ data:
   {{- end }}
 {{- end }}
 {{- if and .Values.fileConfig.enabled (not .Values.fileConfig.existingName) }}
-{{- if empty .Values.fileConfig.data }}
-{{- fail "fileConfig.data is required when fileConfig.enabled=true and fileConfig.existingName is empty" }}
-{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
