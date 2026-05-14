@@ -1,0 +1,27 @@
+################################################################################
+# Chart values
+#
+# These values control Kubernetes resources created by this config chart.
+################################################################################
+
+nameOverride: ""
+
+configMap:
+  # Defaults to <name>-config. If <name> already ends with -config, it is used as-is.
+  name: ""
+  annotations: {}
+
+################################################################################
+# Application config values
+#
+# These values are rendered into files under configs/*. Do not put secrets here.
+# Sensitive values should use gomplate placeholders such as:
+# '[[ file.Read "/secrets/db-password" ]]'
+################################################################################
+
+server:
+  port: 8080
+
+database:
+  host: postgres.example.internal
+  user: demo_app

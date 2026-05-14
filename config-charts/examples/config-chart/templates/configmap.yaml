@@ -1,0 +1,20 @@
+{{- $files := .Files.Glob "configs/*" }}
+{{- if empty $files }}
+{{- fail "configs/* must contain at least one config file" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "demo-app-config.configMapName" . }}
+  labels:
+    {{- include "demo-app-config.labels" . | nindent 4 }}
+  {{- with .Values.configMap.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  {{- range $path, $_ := $files }}
+  {{ base $path }}: |-
+    {{- tpl ($.Files.Get $path) $ | nindent 4 }}
+  {{- end }}
+
