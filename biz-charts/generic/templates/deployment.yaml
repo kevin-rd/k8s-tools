@@ -1,3 +1,6 @@
+{{- if and .Values.fileConfig.render.enabled (not .Values.fileConfig.enabled) }}
+{{- fail "fileConfig.enabled must be true when fileConfig.render.enabled=true" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,6 +43,29 @@ spec:
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.fileConfig.enabled .Values.fileConfig.render.enabled }}
+      initContainers:
+        - name: render-file-config
+          image: "{{ .Values.fileConfig.render.renderer.image.repository }}:{{ .Values.fileConfig.render.renderer.image.tag }}"
+          imagePullPolicy: {{ .Values.fileConfig.render.renderer.image.pullPolicy }}
+          {{- with .Values.fileConfig.render.renderer.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fileConfig.render.renderer.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: file-config
+              mountPath: /templates
+              readOnly: true
+            - name: file-config-render-secret
+              mountPath: /secrets
+              readOnly: true
+            - name: file-config-rendered
+              mountPath: /rendered
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -107,7 +133,7 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
             {{- if .Values.fileConfig.enabled }}
-            - name: file-config
+            - name: {{ ternary "file-config-rendered" "file-config" .Values.fileConfig.render.enabled }}
               mountPath: {{ required "fileConfig.mountPath is required when fileConfig.enabled=true" .Values.fileConfig.mountPath }}
               readOnly: {{ .Values.fileConfig.readOnly }}
             {{- end }}
@@ -138,6 +164,14 @@ spec:
         - name: file-config
           configMap:
             name: {{ include "generic.fileConfigName" . }}
+        {{- if .Values.fileConfig.render.enabled }}
+        - name: file-config-render-secret
+          secret:
+            secretName: {{ include "generic.fileConfigRenderSecretName" . }}
+        - name: file-config-rendered
+          emptyDir:
+            medium: Memory
+        {{- end }}
         {{- end }}
         {{- if .Values.fileSecret.enabled }}
         - name: file-secret

@@ -121,6 +121,17 @@ Return the Secret name used for file mounts.
 {{- end }}
 
 {{/*
+Return the Secret name used as fileConfig render input.
+*/}}
+{{- define "generic.fileConfigRenderSecretName" -}}
+{{- if .Values.fileConfig.render.secret.existingName -}}
+{{- .Values.fileConfig.render.secret.existingName -}}
+{{- else -}}
+{{- fail "fileConfig.render.secret.existingName is required when fileConfig.render.enabled=true" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Return a checksum for chart-managed ConfigMaps and Secrets.
 Existing external objects are intentionally excluded because Helm cannot see their contents.
 */}}

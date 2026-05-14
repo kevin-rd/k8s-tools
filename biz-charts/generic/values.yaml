@@ -99,6 +99,35 @@ fileConfig:
   # config.yaml: |
   #   server:
   #     port: 8080
+  render:
+    enabled: false
+    # Renders fileConfig templates before the application starts.
+    # The template ConfigMap is mounted at /templates, the input Secret at /secrets,
+    # and the rendered output is written to a memory-backed emptyDir at /rendered.
+    secret:
+      # Required when render.enabled=true. The Secret can be created manually,
+      # by SOPS/SealedSecret, or by External Secrets Operator.
+      existingName: ""
+    renderer:
+      image:
+        repository: gomplate/gomplate
+        tag: alpine
+        pullPolicy: IfNotPresent
+      command: []
+      # Use non-Helm delimiters so config files can be managed by Helm charts
+      # without Helm consuming gomplate placeholders first.
+      # Exclude Kubernetes ConfigMap volume metadata entries such as ..data.
+      args:
+        - --left-delim
+        - "[["
+        - --right-delim
+        - "]]"
+        - --input-dir
+        - /templates
+        - --output-dir
+        - /rendered
+        - --exclude
+        - ".*"
 
 fileSecret:
   enabled: false
