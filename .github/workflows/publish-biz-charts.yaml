@@ -65,6 +65,13 @@ jobs:
             echo "No publishable chart changes detected."
             echo "charts=[]" >> "${GITHUB_OUTPUT}"
             echo "has_changes=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo "## Publish biz charts"
+              echo ""
+              echo "- Ref: \`${GITHUB_REF_NAME}\`"
+              echo "- Status: skipped"
+              echo "- Reason: no chart changes detected under \`biz-charts/**\`"
+            } >> "${GITHUB_STEP_SUMMARY}"
             exit 0
           fi
 
@@ -77,6 +84,15 @@ jobs:
 
           echo "charts=${charts_json}" >> "${GITHUB_OUTPUT}"
           echo "has_changes=true" >> "${GITHUB_OUTPUT}"
+          {
+            echo "## Publish biz charts"
+            echo ""
+            echo "- Ref: \`${GITHUB_REF_NAME}\`"
+            echo "- Status: detected chart changes"
+            echo ""
+            echo "### Charts"
+            printf '%s\n' "${chart_dirs[@]}" | sed 's/^/- `/' | sed 's/$/`/'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
   publish:
     runs-on: ubuntu-latest
@@ -148,3 +164,26 @@ jobs:
       - name: Print install command
         run: |
           echo "helm install ${CHART_NAME} oci://ghcr.io/${{ github.repository_owner }}/biz-charts/${CHART_NAME} --version ${CHART_VERSION}"
+
+      - name: Write summary
+        shell: bash
+        run: |
+          {
+            echo "## Published biz chart"
+            echo ""
+            echo "- Chart: \`${CHART_NAME}\`"
+            echo "- Version: \`${CHART_VERSION}\`"
+            echo "- Source: \`${CHART_DIR}\`"
+            echo "- OCI: \`oci://ghcr.io/${{ github.repository_owner }}/biz-charts/${CHART_NAME}\`"
+            if [ "${SKIP_PUBLISH}" = "true" ]; then
+              echo "- Status: skipped, version already exists"
+            else
+              echo "- Status: published"
+            fi
+            echo ""
+            echo "### Install"
+            echo ""
+            echo '```bash'
+            echo "helm install ${CHART_NAME} oci://ghcr.io/${{ github.repository_owner }}/biz-charts/${CHART_NAME} --version ${CHART_VERSION}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"

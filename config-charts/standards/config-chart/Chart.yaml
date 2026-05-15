@@ -1,5 +1,5 @@
 apiVersion: v2
-name: config-chart-template
+name: config-chart
 description: Standard config chart template for rendered file configuration
 type: application
 version: 0.1.0

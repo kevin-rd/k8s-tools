@@ -7,6 +7,8 @@
 - `generic`: 通用服务模板
 - `static`: 静态站点模板
 
+
+
 ## 使用方式
 
 ### 1. 本地渲染
@@ -22,11 +24,13 @@ helm template demo ./biz-charts/generic
 helm template demo ./biz-charts/static -f ./biz-charts/static/values.example.yaml
 ```
 
+
 ### 2. 本地安装
 
 ```bash
 helm install demo ./biz-charts/static -n demo --create-namespace
 ```
+
 
 ### 3. 从 GHCR 安装
 
@@ -40,12 +44,15 @@ helm install demo oci://ghcr.io/<owner>/biz-charts/static --version <chart-versi
 helm install demo oci://ghcr.io/<owner>/biz-charts/generic --version 0.1.0 -n demo --create-namespace
 ```
 
+
 ### 4. 拉取并查看
 
 ```bash
 helm pull oci://ghcr.io/<owner>/biz-charts/static --version <chart-version>
 helm show values oci://ghcr.io/<owner>/biz-charts/static --version <chart-version>
 ```
+
+
 
 ## 发布说明
 

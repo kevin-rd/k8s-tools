@@ -64,6 +64,12 @@ appConfig:
 
 `standards/config-chart` 是模板，不是一份完整的业务 chart。CI 应将它复制到临时目录，注入业务配置文件和所有环境 values 文件后，再校验并打包。
 
+标准 chart 发布到：
+
+```text
+oci://ghcr.io/<owner>/biz-charts/config-chart
+```
+
 标准 chart 包会包含所有环境。CD 在安装 config chart 时决定使用哪个 `values/values-<env>.yaml` 文件。
 
 不要在还没有加入 `configs/*` 前直接对 `standards/config-chart` 执行 `helm lint`；模板本身有意不包含业务配置文件。

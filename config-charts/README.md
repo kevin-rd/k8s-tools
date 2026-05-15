@@ -74,6 +74,12 @@ appConfig:
 copy it into a temporary directory, inject business config files and all
 environment values files, then validate and package the assembled chart.
 
+The standard chart is published to:
+
+```text
+oci://ghcr.io/<owner>/biz-charts/config-chart
+```
+
 The standard chart package contains all environments. CD decides which
 `values/values-<env>.yaml` file to use when installing the config chart.
 
