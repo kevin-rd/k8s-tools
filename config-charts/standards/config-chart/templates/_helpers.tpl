@@ -1,18 +1,19 @@
 {{/*
 Expand the chart name.
 */}}
-{{- define "demo-app-config.name" -}}
+{{- define "config-chart.name" -}}
 {{- default .Release.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*
 Return the ConfigMap name that the app chart references through fileConfig.existingName.
 */}}
-{{- define "demo-app-config.configMapName" -}}
-{{- if .Values.configMap.name -}}
-{{- .Values.configMap.name | trunc 63 | trimSuffix "-" -}}
+{{- define "config-chart.configMapName" -}}
+{{- $configMap := default dict .Values.configMap -}}
+{{- if $configMap.name -}}
+{{- $configMap.name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := include "demo-app-config.name" . -}}
+{{- $name := include "config-chart.name" . -}}
 {{- if hasSuffix "-config" $name -}}
 {{- $name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -24,7 +25,7 @@ Return the ConfigMap name that the app chart references through fileConfig.exist
 {{/*
 Common labels.
 */}}
-{{- define "demo-app-config.labels" -}}
-app.kubernetes.io/name: {{ include "demo-app-config.name" . }}
+{{- define "config-chart.labels" -}}
+app.kubernetes.io/name: {{ include "config-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

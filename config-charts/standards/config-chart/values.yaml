@@ -1,0 +1,12 @@
+################################################################################
+# Chart values
+#
+# These values control Kubernetes resources created by this config chart.
+################################################################################
+
+nameOverride: ""
+
+configMap:
+  # Defaults to <name>-config. If <name> already ends with -config, it is used as-is.
+  name: ""
+  annotations: {}

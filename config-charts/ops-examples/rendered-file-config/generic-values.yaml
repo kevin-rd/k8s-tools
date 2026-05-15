@@ -15,4 +15,5 @@ fileConfig:
   render:
     enabled: true
     secret:
+      # Injected into the render initContainer as envFrom by default.
       existingName: demo-app-config-secret

@@ -2,13 +2,14 @@
 {{- if empty $files }}
 {{- fail "configs/* must contain at least one config file" }}
 {{- end }}
+{{- $configMap := default dict .Values.configMap }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "demo-app-config.configMapName" . }}
+  name: {{ include "config-chart.configMapName" . }}
   labels:
-    {{- include "demo-app-config.labels" . | nindent 4 }}
-  {{- with .Values.configMap.annotations }}
+    {{- include "config-chart.labels" . | nindent 4 }}
+  {{- with $configMap.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
@@ -17,4 +18,3 @@ data:
   {{ base $path }}: |-
     {{- tpl ($.Files.Get $path) $ | nindent 4 }}
   {{- end }}
-

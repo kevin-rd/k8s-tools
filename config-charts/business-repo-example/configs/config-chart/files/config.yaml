@@ -1,0 +1,10 @@
+server:
+  port: {{ .Values.appConfig.server.port }}
+
+database:
+  name: {{ .Values.appConfig.database.name | quote }}
+  host: '[[ env.Env.POSTGRES_HOST ]]'
+  port: '[[ getenv "POSTGRES_PORT" "5432" ]]'
+  user: '[[ env.Env.POSTGRES_USER ]]'
+  password: '[[ env.Env.POSTGRES_PASSWORD ]]'
+  sslmode: '[[ getenv "POSTGRES_SSLMODE" "disable" ]]'

@@ -1,8 +1,0 @@
-server:
-  port: {{ .Values.server.port }}
-
-database:
-  host: {{ .Values.database.host | quote }}
-  user: {{ .Values.database.user | quote }}
-  password: '[[ file.Read "/secrets/db-password" ]]'
-

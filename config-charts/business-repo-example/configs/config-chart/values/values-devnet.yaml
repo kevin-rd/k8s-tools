@@ -1,0 +1,14 @@
+################################################################################
+# Application config values
+#
+# These values are rendered into files under configs/config-chart/files/*. Do not
+# put secrets here. Sensitive values should use gomplate placeholders such as:
+# '[[ env.Env.POSTGRES_PASSWORD ]]'
+################################################################################
+
+appConfig:
+  server:
+    port: 8080
+
+  database:
+    name: demo_app_devnet
